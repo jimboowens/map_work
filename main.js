@@ -1,4 +1,5 @@
-// Initialize and add the map
+
+    // Initialize and add the map
 function initMap() {
     // The location of Uluru
     var uluru = {lat: -25.344, lng: 131.036};
