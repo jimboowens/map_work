@@ -1,0 +1,17 @@
+body{
+	/* background-color: blue; */
+
+}
+
+#map{
+	height: 100vh;
+}
+
+.city-name{
+	cursor: pointer;
+	color: blue;
+}
+ #map {
+	height: 400px;  /* The height is 400 pixels */
+	width: 100%;  /* The width is the width of the web page */
+}
