@@ -1,102 +1,90 @@
-let toggle = `hidden`
+var map, popup, Popup;
 
-let farmInfo = [
-    {   
-        farmName: "Aluma Farm",
-        blurb: "",       
-    },
-
-    {
-        farmName: "Tucker Farms Georgia",
-        blurb: "",       
-    },
-
-    {
-        farmName: "Truly Living Well",
-        blurb: "",       
-    },
-
-    {
-        farmName: "DogHead Farm",
-        blurb: "",       
-    },
-
-    {
-        farmName: "Country Gardens and Farm Nursery",
-        blurb: "",       
-    },
-
-    {
-        farmName: "HunterCattle Company",
-        blurb: "",       
-    },
-
-    {
-        farmName: "White Oak Pastures",
-        blurb: "",       
-    },
-
-    {
-        farmName: "Heritage Farm Georgia",
-        blurb: "",       
-    },
-
-    {
-        farmName: "Mountain Valley Farm",
-        blurb: "",       
-    },
-
-    {
-        farmName: "Love is Love Farm at Gaia Gardens",
-        blurb: "",       
-    },
-
-    {
-        farmName: "Rise 'n Shine Organic Farm",
-        blurb: "",       
-    },
-
-    {
-        farmName: "HoneyWood Farms",
-        blurb: "",       
-    },
-
-]
-
-$('.button').click((event) => {
-    event.preventDefault()
-    if (toggle === `visible`){
-        $('#map').css(`visibility`, toggle)
-        toggle = `hidden`
-    } else{
-        $('#map').css(`visibility`, toggle)
-        toggle = `visible`
-    }  
-})
-
-farmInfo.forEach(element => {
-    let mapURL = `https://maps.googleapis.com/maps/api/geocode/json?address=${element.farmName}&key=${apiKey}`
-    console.log(element)
-    $.getJSON(mapURL, (info)=>{
-        let address = info.results[0].formatted_address
-        let latLong = info.results[0].geometry.location
-        element.address = address
-        element.latLong = latLong
-        
-    })
-
-})
+/** Initializes the map and the custom popup. */
 function initMap() {
-    var gaMiddle = {lat: 32.838131, lng: -83.634705}
-    var map = new google.maps.Map(document.getElementById('map'), {zoom: 7, center: gaMiddle})
-    map.setMapTypeId(`hybrid`)
-    farmInfo.forEach(element => {
-        let marker = new google.maps.Marker({
-            position: element.latLong,
-            map:map,
-            icon: `./images/map_icon.png`,
-            animation: google.maps.Animation.BOUNCE
-        })
-        marker.setMap(map)
-    })
+  definePopupClass();
+
+  map = new google.maps.Map(document.getElementById('map'), {
+    center: {lat: -33.9, lng: 151.1},
+    zoom: 10,
+  });
+
+  popup = new Popup(
+      new google.maps.LatLng(-33.866, 151.196),
+      document.getElementById('content'));
+  popup.setMap(map);
+}
+
+/** Defines the Popup class. */
+function definePopupClass() {
+  /**
+   * A customized popup on the map.
+   * @param {!google.maps.LatLng} position
+   * @param {!Element} content
+   * @constructor
+   * @extends {google.maps.OverlayView}
+   */
+  Popup = function(position, content) {
+    this.position = position;
+
+    content.classList.add('popup-bubble-content');
+
+    var pixelOffset = document.createElement('div');
+    pixelOffset.classList.add('popup-bubble-anchor');
+    pixelOffset.appendChild(content);
+
+    this.anchor = document.createElement('div');
+    this.anchor.classList.add('popup-tip-anchor');
+    this.anchor.appendChild(pixelOffset);
+
+    // Optionally stop clicks, etc., from bubbling up to the map.
+    this.stopEventPropagation();
+  };
+  // NOTE: google.maps.OverlayView is only defined once the Maps API has
+  // loaded. That is why Popup is defined inside initMap().
+  Popup.prototype = Object.create(google.maps.OverlayView.prototype);
+
+  /** Called when the popup is added to the map. */
+  Popup.prototype.onAdd = function() {
+    this.getPanes().floatPane.appendChild(this.anchor);
+  };
+
+  /** Called when the popup is removed from the map. */
+  Popup.prototype.onRemove = function() {
+    if (this.anchor.parentElement) {
+      this.anchor.parentElement.removeChild(this.anchor);
+    }
+  };
+
+  /** Called when the popup needs to draw itself. */
+  Popup.prototype.draw = function() {
+    var divPosition = this.getProjection().fromLatLngToDivPixel(this.position);
+    // Hide the popup when it is far out of view.
+    var display =
+        Math.abs(divPosition.x) < 4000 && Math.abs(divPosition.y) < 4000 ?
+        'block' :
+        'none';
+
+    if (display === 'block') {
+      this.anchor.style.left = divPosition.x + 'px';
+      this.anchor.style.top = divPosition.y + 'px';
+    }
+    if (this.anchor.style.display !== display) {
+      this.anchor.style.display = display;
+    }
+  };
+
+  /** Stops clicks/drags from bubbling up to the map. */
+  Popup.prototype.stopEventPropagation = function() {
+    var anchor = this.anchor;
+    anchor.style.cursor = 'auto';
+
+    ['click', 'dblclick', 'contextmenu', 'wheel', 'mousedown', 'touchstart',
+     'pointerdown']
+        .forEach(function(event) {
+          anchor.addEventListener(event, function(e) {
+            e.stopPropagation();
+          });
+        });
+  };
 }
